@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Define main Splunk server details
+MAIN_SPLUNK_HOST="192.168.122.37"
+MAIN_SPLUNK_PORT="9998" # Adjust the port if necessary
+
+# Define Splunk forwarder details
+FORWARDER_HOST="192.168.122.15"
+FORWARDER_PORT="9998" # Adjust the port if necessary
+FORWARDER_NAME=$(hostname)
+
+# Define output file path
+OUTPUT_FILE="/opt/splunkforwarder/connectivity_check.txt"
+
+# Function to check connectivity using appropriate tool and gather details
+check_connectivity() {
+    local host="$1"
+    local port="$2"
+    local forwarder_host="$3"
+    local forwarder_name="$4"
+
+    # Check if nc (netcat) is available
+    if command -v nc &> /dev/null; then
+        nc_output=$(nc -vz -w 5 "$host" "$port" 2>&1)
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - Netcat Output: $nc_output by $forwarder_host named $FORWARDER_NAME" | tr -d '\n'
+        echo -n " | "
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - Reverse DNS Lookup: $(host "$host")"
+    # Check if ncat is available
+    elif command -v ncat &> /dev/null; then
+        ncat_output=$(ncat -vz -w 5 "$host" "$port" 2>&1)
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - Ncat Output: $ncat_output by $forwarder_host named $FORWARDER_NAME" | tr -d '\n'
+        echo -n " | "
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - Reverse DNS Lookup: $(host "$host")"
+    # Check if netcat is available
+    elif command -v netcat &> /dev/null; then
+        netcat_output=$(netcat -vz -w 5 "$host" "$port" 2>&1)
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - Netcat (Netcat) Output: $netcat_output by $forwarder_host named $FORWARDER_NAME" | tr -d '\n'
+        echo -n " | "
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - Reverse DNS Lookup: $(host "$host")"
+    else
+        echo "No suitable tool found to perform connectivity check."
+    fi
+}
+
+# Check connectivity from forwarder to main Splunk and append to file
+check_connectivity "$MAIN_SPLUNK_HOST" "$MAIN_SPLUNK_PORT" "$FORWARDER_HOST" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+echo "Connectivity check results saved to $OUTPUT_FILE"
