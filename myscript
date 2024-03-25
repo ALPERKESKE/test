@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Define main Splunk server details
+MAIN_SPLUNK_HOST="192.168.122.37"
+MAIN_SPLUNK_PORT="9998" # Adjust the port if necessary
+
+# Define Splunk forwarder details
+FORWARDER_HOST="192.168.122.15"
+FORWARDER_PORT="9998" # Adjust the port if necessary
+
+# Define output file path
+OUTPUT_FILE="/opt/splunkforwarder/connectivity_check.txt"
+
+
+# Function to check connectivity using nc and gather details
+check_connectivity() {
+    local host="$1"
+    local port="$2"
+
+
+    nc_output=$(nc -vz -w 5 "$host" "$port" 2>&1)
+    echo "$(date +"%Y-%m-%d %H:%M:%S") - Netcat Output: $nc_output" | tr -d '\n'
+    echo -n " | "
+    echo "$(date +"%Y-%m-%d %H:%M:%S") - Reverse DNS Lookup: $(host "$host")"
+}
+
+# Check connectivity from forwarder to main Splunk and append to file
+check_connectivity "$MAIN_SPLUNK_HOST" "$MAIN_SPLUNK_PORT" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
